@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>政务协作实验平台</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+    body { font-family: system-ui, sans-serif; background: #f5f8fb; margin:0; padding:0; color:#1a2a4a; }
+    header { background:#1b4f9c; color:white; padding:16px; text-align:center; font-size:22px; font-weight:bold; }
+    .container { max-width:850px; margin:auto; background:white; padding:25px; margin-top:25px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
+    .section-title { font-size:20px; margin-top:25px; border-left:6px solid #1b4f9c; padding-left:10px; font-weight:bold; }
+    .ai-box { border:2px solid #1b4f9c; padding:12px; border-radius:10px; margin-top:10px; }
+    #aiButton { background:#1b4f9c; color:white; padding:10px 18px; font-size:15px; border-radius:8px; border:none; cursor:pointer; margin-top:15px; }
+    #aiButton:hover { background:#163f7d; }
+    #chatBox { width:100%; height:160px; padding:10px; }
+    #aiAnswer { background:#eef3fa; padding:12px; border-radius:6px; margin-top:10px; min-height:40px; }
+    #nextButton { margin-top:25px; padding:12px 20px; background:#2b7a0b; color:white; border:none; font-size:17px; border-radius:10px; cursor:pointer; }
+    #nextButton:hover { background:#225f09; }
+    .task-box { padding:15px; border:1px solid #ccd7e3; border-radius:10px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<header>政务协作实验平台</header>
+
+<div class="container">
+
+    <!-- 合作伙伴选择任务 -->
+    <div class="section-title">任务 1：合作伙伴选择</div>
+    <div class="task-box">
+        假设你所在的城市希望开展跨区域合作，以下三个城市向你发来合作邀请：<br><br>
+        <b>A 市：</b>财政实力强、数字基础设施完善<br>
+        <b>B 市：</b>与你本市经济结构互补明显<br>
+        <b>C 市：</b>地理位置邻近，沟通成本较低<br><br>
+        请选择你最倾向合作的城市：<br>
+        <label><input type="radio" name="partner" value="A 市"> A 市</label><br>
+        <label><input type="radio" name="partner" value="B 市"> B 市</label><br>
+        <label><input type="radio" name="partner" value="C 市"> C 市</label><br>
+    </div>
+
+    <!-- 资源分配任务 -->
+    <div class="section-title">任务 2：合作资源分配</div>
+    <div class="task-box">
+        你与合作城市共同申请到一笔 <b>1000 万元专项资金</b>用于合作项目。<br>
+        请决定分配给对方城市的金额（0–1000 万之间）：<br><br>
+        <input id="allocationInput" type="number" min="0" max="1000" style="padding:6px; width:120px;"> 万元
+    </div>
+
+    <!-- AI 助手 -->
+    <div class="section-title">政务智能助手（可选）</div>
+    <div class="ai-box">
+        <textarea id="chatBox" placeholder="向政务智能助手咨询，例如：不同合作城市的潜在收益如何？"></textarea>
+        <button id="aiButton">询问智能助手</button>
+        <div id="aiAnswer"></div>
+    </div>
+
+    <!-- 完成按钮 -->
+    <button id="nextButton">完成并进入问卷</button>
+</div>
+
+<script>
+// ------------------------------
+// 数据记录
+// ------------------------------
+let logData = {
+    ai_calls: [],
+    tasks: {}
+};
+
+// 记录任务选择
+document.querySelectorAll('input[name="partner"]').forEach(r => {
+    r.addEventListener("change", () => {
+        logData.tasks.partner_choice = r.value;
+    });
+});
+document.getElementById("allocationInput").addEventListener("input", e => {
+    logData.tasks.allocation = e.target.value;
+});
+
+// ------------------------------
+// AI 调用
+// ------------------------------
+const WORKER_URL = "https://1386187990-lrl3xc48tz.ap-guangzhou.tencentscf.com"; // 你的 SCF URL
+
+document.getElementById("aiButton").onclick = async () => {
+    const content = document.getElementById("chatBox").value;
+    if (!content.trim()) return;
+
+    const timestamp = new Date().toISOString();
+    logData.ai_calls.push({ ask: content, time: timestamp });
+
+    try {
+        const res = await fetch(WORKER_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                model: "deepseek-chat",
+                messages: [
+                    { role: "system", content: "你是一名政务协作分析助手，用正式、政策风格回答。" },
+                    { role: "user", content }
+                ],
+                max_tokens: 400,
+                stream: false
+            })
+        });
+
+        const data = await res.json();
+        const answer = data.choices?.[0]?.message?.content || "（AI 没有返回结果）";
+        document.getElementById("aiAnswer").innerText = answer;
+
+        // 记录答复
+        logData.ai_calls[logData.ai_calls.length - 1].answer = answer;
+
+    } catch (err) {
+        document.getElementById("aiAnswer").innerText = "AI 调用出错：" + err.message;
+    }
+};
+
+// ------------------------------
+// 完成跳转问卷
+// ------------------------------
+document.getElementById("nextButton").onclick = () => {
+    const payload = encodeURIComponent(JSON.stringify(logData));
+    window.location.href = "https://www.credamo.com/s/VBBzA3ano?log=" + payload;
+};
+</script>
+
+</body>
+</html>
