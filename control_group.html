@@ -1,0 +1,86 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>政务协作实验 — 对照组（政务蓝白版）</title>
+<style>
+  :root{--gov-blue:#0b63b0;--accent:#aad1ff;}
+  body{font-family: "Microsoft YaHei", Arial, sans-serif; background:#f3f7fb; margin:0; color:#10314a;}
+  .top{background:var(--gov-blue); color:white; padding:18px 22px;}
+  .wrap{max-width:1000px; margin:18px auto; padding:0 18px;}
+  .panel{background:white; border-radius:10px; padding:18px; box-shadow:0 2px 6px rgba(16,49,74,0.08); margin-bottom:16px;}
+  h2{margin:0 0 8px 0;color:var(--gov-blue);}
+  .muted{color:#6b7a86;font-size:14px;}
+  label{display:block;margin:8px 0;font-weight:600;}
+  select,input[type=number],textarea{width:100%;padding:8px;border:1px solid #e0e6ec;border-radius:6px;}
+  .row{display:flex;gap:12px;}
+  .col{flex:1;}
+  .btn{background:var(--gov-blue);color:white;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;}
+  .small{font-size:13px;color:#6b7a86;}
+  .footer{font-size:13px;color:#8899a6;text-align:center;padding:10px;}
+</style>
+</head>
+<body>
+  <div class="top"><div class="wrap"><h1>政务协作模拟实验（对照组）</h1><div class="muted">请按页面指引完成【任务 A：合作伙伴选择】和【任务 B：资源分配】。</div></div></div>
+  <div class="wrap">
+    <div class="panel" id="taskA">
+      <h2>任务 A — 合作伙伴选择</h2>
+      <p class="small">情境：你担任市发展改革局处长，需要选择一个城市作为本次“数字治理协作”的首要合作伙伴。请在下列候选城市中选择。</p>
+      <label>请选择最适合的合作城市（单选）</label>
+      <select id="choiceA">
+        <option value="">-- 请选择 --</option>
+        <option value="A市">A市 — 经济发达、技术成熟</option>
+        <option value="B市">B市 — 地理邻近、行政关系紧密</option>
+        <option value="C市">C市 — 资源有限但积极配合</option>
+      </select>
+      <label>请在 30–120 字内简要说明你选择该城市的理由：</label>
+      <textarea id="reasonA" rows="4" placeholder="请输入理由（建议 30–120 字）"></textarea>
+    </div>
+    <div class="panel" id="taskB">
+      <h2>任务 B — 合作资源分配</h2>
+      <p class="small">情境：你有 100 单位资源（资金/人员/政策支持等），请选择如何在两个候选城市间分配（整数）。</p>
+      <div class="row">
+        <div class="col"><label>城市 A（A市）分配：</label><input id="allocA" type="number" min="0" max="100" value="0"></div>
+        <div class="col"><label>城市 B（B市）分配：</label><input id="allocB" type="number" min="0" max="100" value="0"></div>
+      </div>
+      <p class="small">提示：系统会检查总和是否为100。</p>
+      <div style="margin-top:8px;"><button class="btn" id="saveAlloc">记录分配（保存）</button></div>
+      <p class="note" id="allocNote"></p>
+    </div>
+    <div class="panel">
+      <h2>提交并继续</h2>
+      <p class="small">完成上面两个任务后，点击下方按钮提交并跳转至后测问卷。</p>
+      <div style="display:flex;gap:12px;">
+        <button class="btn" id="submitBtn">提交并进入后测问卷</button>
+        <button id="backupBtn" style="padding:10px;border-radius:8px;border:1px solid #ccddee;background:white;cursor:pointer;">下载本地备份（可选）</button>
+      </div>
+    </div>
+    <div class="panel small"><div>管理员提示：按 <b>Cmd/Ctrl + Shift + D</b> 打开管理员导出（仅教师使用）。</div></div>
+    <div class="footer">本实验由教研室设计，数据仅用于学术研究与教学。</div>
+  </div>
+<script>
+(function(){
+  const CREDAMO_LINK = "https://www.credamo.com/s/VBBzA3ano";
+  const participantId = 'PID' + Math.floor(100000 + Math.random()*899999);
+  const startTime = new Date().toISOString();
+  let logs = [];
+  let allocationSaved=false;
+  function logEvent(type,data){ logs.push({time:new Date().toISOString(), type:type, data:data}); console.log('log', type, data); }
+  logEvent('session_start',{participantId, startTime, condition:'Control'});
+  document.getElementById('saveAlloc').addEventListener('click', function(){ const a = parseInt(document.getElementById('allocA').value)||0; const b = parseInt(document.getElementById('allocB').value)||0; const sum = a+b; const note = document.getElementById('allocNote'); if(sum!==100){ note.textContent='分配总和必须为 100，请调整。当前总和：'+sum; return;} allocationSaved=true; note.textContent='分配已保存。'; logEvent('allocation_saved',{allocA:a,allocB:b}); alert('分配已保存，请继续或提交。'); });
+  document.getElementById('backupBtn').addEventListener('click', function(){ const data=gatherData(); const blob=new Blob([JSON.stringify(data)],{type:'application/json;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='backup_'+participantId+'.json'; a.click(); URL.revokeObjectURL(a.href); });
+  function gatherData(){ const choice=document.getElementById('choiceA').value; const reason=document.getElementById('reasonA').value.trim(); const allocA=parseInt(document.getElementById('allocA').value)||0; const allocB=parseInt(document.getElementById('allocB').value)||0; return {participantId, startTime, condition:'Control', taskA:{choice, reason}, taskB:{allocA, allocB}, logs}; }
+  // admin export
+  let adminVisible=false; window.addEventListener('keydown', function(e){ if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key.toLowerCase()==='d'){ adminVisible=!adminVisible; if(adminVisible) showAdmin(); else hideAdmin(); } });
+  function showAdmin(){ if(document.getElementById('adminPanel')) return; const p=document.createElement('div'); p.id='adminPanel'; p.style.position='fixed'; p.style.top='10px'; p.style.right='10px'; p.style.zIndex=99999; p.style.background='white'; p.style.border='1px solid #ccddee'; p.style.padding='10px'; p.style.borderRadius='8px'; p.innerHTML='<div style="font-weight:700;margin-bottom:8px;">管理员面板</div><div style="display:flex;gap:8px;"><button class="btn" onclick="adminExport()">导出数据 (CSV)</button><button onclick="closeAdmin()" style="padding:8px;border-radius:6px;border:1px solid #ccddee;background:#fff;">关闭</button></div>'; document.body.appendChild(p); }
+  function hideAdmin(){ const p=document.getElementById('adminPanel'); if(p) p.remove(); } function closeAdmin(){ hideAdmin(); adminVisible=false; }
+  function adminExport(){ const data=gatherData(); let csv='time,type,participantId,condition,content\n'; data.logs.forEach(item=>{ const content=typeof item.data==='object'?JSON.stringify(item.data).replace(/"/g,"'"):String(item.data).replace(/"/g,"'"); csv+='"'+item.time+'","'+item.type+'","'+data.participantId+'","Control","'+content+'"\n'; }); csv+='"'+new Date().toISOString()+'","response","'+data.participantId+'","Control","'+JSON.stringify({taskA:data.taskA,taskB:data.taskB}).replace(/"/g,"'")+'"\n'; const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='experiment_'+data.participantId+'.csv'; a.click(); URL.revokeObjectURL(a.href); }
+  // submit
+  document.getElementById('submitBtn').addEventListener('click', function(){ const choice=document.getElementById('choiceA').value; const sum=(parseInt(document.getElementById('allocA').value)||0)+(parseInt(document.getElementById('allocB').value)||0); if(!choice){ alert('请完成任务 A（选择合作城市）。'); return; } if(sum!==100){ alert('任务 B 的资源分配总和必须为 100。'); return; } logEvent('submit',{choice,allocA:document.getElementById('allocA').value,allocB:document.getElementById('allocB').value}); const url=new URL(CREDAMO_LINK); url.searchParams.set('pid', participantId); window.location.href = url.toString(); });
+  function gatherData(){ const choice=document.getElementById('choiceA').value; const reason=document.getElementById('reasonA').value.trim(); const allocA=parseInt(document.getElementById('allocA').value)||0; const allocB=parseInt(document.getElementById('allocB').value)||0; return {participantId, startTime, condition:'Control', taskA:{choice, reason}, taskB:{allocA, allocB}, logs}; }
+})();
+</script>
+</body>
+</html>
